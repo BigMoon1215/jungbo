@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Do List</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #edf0f3; /* 부드러운 배경 색상 */
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fcfdff; /* 흰색 배경 */
+            padding: 20px;
+            border-radius: 30px; /* 둥근 모서리 */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+        }
+
+        h1 {
+            text-align: center;
+            color: #202122; /* 어두운 텍스트 색상 To Do List 색상*/
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #1d1e1e; /* 회색 텍스트 색상 오늘 할 일 수, 완료한 할 일 수 색상 */
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: center;
+            flex-direction: column; /* 세로 정렬 */
+            align-items: center; /* 가운데 정렬 */
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 80%; /* 입력 필드의 너비 증가 */
+            padding: 12px; /* 패딩 증가 */
+            margin: 5px 0; /* 위아래 여백 추가 */
+            border: 2px solid #343434; /* 검정색 테두리 */
+            border-radius: 10px; /* 둥근 모서리 */
+            font-size: 16px; /* 글자 크기 설정 */
+        }
+
+        button {
+            padding: 12px;
+            background-color: #262630; /* 검정색 배경 */
+            color: white;
+            border: none;
+            border-radius: 5px; /* 둥근 모서리 */
+            cursor: pointer;
+            font-size: 16px; /* 글자 크기 설정 */
+            transition: background-color 0.3s; /* 배경색 변화 애니메이션 */
+        }
+
+        button:hover {
+            background-color: #a28fff; /* 호버 시 색상 변경 */
+        }
+
+        #todo-list {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px; /* 리스트와 상단 요소 간의 여백 */
+        }
+
+        #todo-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa; /* 연한 회색 배경 */
+            border-radius: 5px; /* 둥근 모서리 */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+            transition: transform 0.2s; /* 애니메이션 효과 */
+        }
+
+        #todo-list li:hover {
+            transform: scale(1.02); /* 호버 시 약간 커짐 */
+        }
+
+        .completed {
+            color: gray;
+        }
+
+        .completed .todo-text {
+            text-decoration: line-through; /* 회색 줄 추가 */
+        }
+
+        .delete-button {
+            background: #dc3545; /* 빨간색 배경 */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        /* 삭제 버튼과 '▶' 기호의 스타일 */
+        .delete-button:hover {
+            background: #c82333; /* 호버 시 색상 변경 */
+        }
+
+        /* '▶' 기호 스타일 */
+        .todo-symbol {
+            margin-right: 5px; /* 기호와 텍스트 간격 */
+        }
+
+        .todo-text {
+            display: inline; /* inline으로 설정하여 줄이 그어지지 않도록 */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>To Do List</h1>
+        <div class="input-group">
+            <input type="date" id="calendar" />
+            <input type="text" id="todo-input" placeholder="오늘의 할 일은?">
+            <button id="add-button">추가</button>
+        </div>
+        <ul id="todo-list"></ul>
+        <h2>오늘 할 일 수: <span id="today-count">0</span></h2>
+        <h2>완료한 할 일 수: <span id="completed-count">0</span></h2>
+    </div>
+    <script>
+        const todos = JSON.parse(localStorage.getItem('todos')) || {};
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('calendar').value = today;
+
+        document.getElementById('add-button').addEventListener('click', function () {
+            const input = document.getElementById('todo-input');
+            const todoText = input.value.trim();
+            const selectedDate = document.getElementById('calendar').value;
+
+            if (todoText === '') {
+                alert('할 일을 입력해주세요.');
+                return;
+            }
+
+            if (!todos[selectedDate]) {
+                todos[selectedDate] = [];
+            }
+
+            // '▶' 기호를 붙여서 할 일을 추가합니다.
+            todos[selectedDate].push({ text: todoText, completed: false });
+            input.value = '';
+            updateTodoList();
+            saveTodos();
+        });
+
+        document.getElementById('calendar').addEventListener('change', function () {
+            updateTodoList();
+        });
+
+        function updateTodoList() {
+            const selectedDate = document.getElementById('calendar').value;
+            const todoList = document.getElementById('todo-list');
+            todoList.innerHTML = '';
+
+            if (todos[selectedDate]) {
+                todos[selectedDate].forEach((todo, index) => {
+                    const li = document.createElement('li');
+
+                    // '▶' 기호와 할 일 텍스트를 감싸는 div 생성
+                    const todoSymbol = document.createElement('span');
+                    todoSymbol.className = 'todo-symbol';
+                    todoSymbol.textContent = '▶';
+
+                    const todoText = document.createElement('span');
+                    todoText.className = 'todo-text';
+                    todoText.textContent = todo.text;
+
+                    const todoWrapper = document.createElement('div');
+                    todoWrapper.className = todo.completed ? 'completed' : '';
+                    todoWrapper.appendChild(todoSymbol);
+                    todoWrapper.appendChild(todoText);
+
+                    todoWrapper.addEventListener('click', function () {
+                        todo.completed = !todo.completed;
+                        todoWrapper.classList.toggle('completed');
+                        updateCounts(); // 변경된 항목에 따라 카운트 업데이트
+                        saveTodos();
+                    });
+
+                    li.appendChild(todoWrapper);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = '삭제';
+                    deleteButton.className = 'delete-button';
+                    deleteButton.addEventListener('click', function (event) {
+                        event.stopPropagation(); // 클릭 전파 방지
+                        todos[selectedDate].splice(index, 1);
+                        updateTodoList();
+                        saveTodos();
+                    });
+
+                    li.appendChild(deleteButton);
+                    todoList.appendChild(li);
+                });
+            }
+            updateCounts();
+        }
+
+        function updateCounts() {
+            const selectedDate = document.getElementById('calendar').value;
+            const completedItems = todos[selectedDate] ? todos[selectedDate].filter(todo => todo.completed).length : 0;
+            const todayItems = todos[selectedDate] ? todos[selectedDate].length : 0;
+
+            document.getElementById('completed-count').textContent = completedItems;
+            document.getElementById('today-count').textContent = todayItems;
+        }
+
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        // 초기화 시 투두리스트 불러오기
+        updateTodoList();
+    </script>
+</body>
+
+</html>
